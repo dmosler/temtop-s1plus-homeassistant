@@ -1,0 +1,7 @@
+# Config file with secrets - never commit this!
+temtop.conf
+
+# Python
+__pycache__/
+*.pyc
+*.pyo

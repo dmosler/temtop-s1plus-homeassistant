@@ -1,0 +1,15 @@
+type: entities
+title: Temtop S1+ Air Quality
+entities:
+  - entity: sensor.temtop_pm25
+    name: PM2.5
+    icon: mdi:air-filter
+  - entity: sensor.temtop_aqi
+    name: AQI
+    icon: mdi:leaf
+  - entity: sensor.temtop_temperature
+    name: Temperature
+    icon: mdi:thermometer
+  - entity: sensor.temtop_humidity
+    name: Humidity
+    icon: mdi:water-percent

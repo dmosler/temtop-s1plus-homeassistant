@@ -1,0 +1,2 @@
+HA_TOKEN=your_long_lived_access_token_here
+HA_URL=http://your_home_assistant_ip:8123
