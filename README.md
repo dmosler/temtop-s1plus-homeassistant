@@ -1,161 +1,138 @@
-# Temtop S1+ Home Assistant Integration
+# Temtop Home Assistant Integration
 
-Read Temtop S1+ air quality data via BLE and send it to Home Assistant — **no app required**.
+Temtop is a custom Home Assistant integration for selected Temtop BLE air quality
+monitors. It connects through Home Assistant's Bluetooth stack, including local
+Bluetooth adapters and connectable ESPHome Bluetooth proxies, subscribes to the
+device notification characteristic, and exposes the decoded measurements as
+native Home Assistant sensors.
 
-This is believed to be the **first open-source integration** for the Temtop S1+ without the official app.
+This implementation builds on the original S1+ script and extends it with the
+C1+ protocol mapping derived from local BLE captures.
 
-## What it does
+## Development note
 
-Connects to the Temtop S1+ air quality monitor via Bluetooth Low Energy (BLE), reads the sensor data every 60 seconds, and sends it directly to Home Assistant via the REST API.
+This project was developed end-to-end in a vibe-coded, AI-assisted workflow.
+That includes the BLE reverse engineering, payload validation against the
+physical display, protocol documentation, Home Assistant integration code,
+HACS packaging, and the Bronze-oriented cleanup.
 
-**Sensors available:**
-- PM2.5 (µg/m³)
-- AQI
-- Temperature (°C)
-- Humidity (%)
+The reverse engineering was performed from local captures of a Temtop C1+
+device and comparison with the physical device display. The S1+ support is
+derived from the reference repository linked above.
 
-## Hardware Requirements
+## Supported devices
 
-- Temtop S1+ air quality monitor
-- Raspberry Pi (any model with Bluetooth, or Pi 1/2 with a USB Bluetooth dongle)
-- USB Bluetooth 4.0+ dongle (if your Pi doesn't have built-in Bluetooth)
-  - Tested with: TP-Link UB500
+Known supported devices:
 
-## Software Requirements
+- Temtop C1+: CO2, temperature, humidity
+- Temtop S1+: PM2.5, AQI, temperature, humidity
 
-- Raspberry Pi OS (Bullseye or newer)
-- Python 3
-- [bleak](https://github.com/hbldh/bleak) library
-- [requests](https://requests.readthedocs.io/) library
-- Home Assistant with a Long-Lived Access Token
+Unsupported or unverified devices:
+
+- Other Temtop models are not supported unless they use the same notification
+  protocol.
+- Cloud/app-only features are not implemented.
 
 ## Installation
 
-### 1. Install dependencies
+### HACS custom repository
 
-```bash
-sudo apt update
-sudo apt install -y bluetooth bluez python3-pip
-pip3 install bleak --break-system-packages
+1. In HACS, open **Custom repositories**.
+2. Add this repository URL as type **Integration**:
+
+   ```text
+   https://github.com/dmosler/temtop-s1plus-homeassistant
+   ```
+
+3. Install **Temtop** from HACS.
+4. Restart Home Assistant.
+
+### Manual installation
+
+1. Copy `custom_components/temtop` into your Home Assistant config directory:
+
+   ```text
+   config/custom_components/temtop
+   ```
+
+2. Restart Home Assistant.
+
+## Setup
+
+1. Make sure Bluetooth is enabled in Home Assistant.
+2. If the Temtop is not near the Home Assistant host, use a connectable ESPHome
+   Bluetooth proxy close to the device.
+3. Open **Settings > Devices & services > Add integration**.
+4. Search for **Temtop**.
+5. If Bluetooth discovery finds the device, confirm the discovered device.
+6. If it is not discovered automatically, enter the BLE address manually and
+   select the device model.
+
+Setup parameters:
+
+- **Bluetooth address**: BLE MAC address of the Temtop device, for example
+  `A4:C1:38:BE:1F:4A`.
+- **Name**: Device name shown in Home Assistant.
+- **Model**: `C1+`, `S1+`, or `Auto` when the model can be detected from the
+  BLE name or payload.
+
+The config flow checks that Home Assistant currently has a connectable
+Bluetooth path before accepting manual setup.
+
+## Entities
+
+The integration creates one Home Assistant device per Temtop monitor.
+
+C1+ entities:
+
+- **CO2**: Carbon dioxide in ppm
+- **Temperature**: Temperature in Celsius
+- **Humidity**: Relative humidity in percent
+- **Connection status**: Diagnostic BLE connection state
+
+S1+ entities:
+
+- **PM2.5**: Fine particulate matter in ug/m3
+- **AQI**: Air quality index
+- **Temperature**: Temperature in Celsius
+- **Humidity**: Relative humidity in percent
+- **Connection status**: Diagnostic BLE connection state
+
+## Data updates
+
+The integration is `local_push`. It keeps a BLE notification subscription open
+and updates entities when the device sends a notification. If the Bluetooth path
+is lost, measurement entities become unavailable and the coordinator retries the
+connection.
+
+## Service actions
+
+This integration does not provide Home Assistant service actions. It only
+creates sensor entities.
+
+## Removal
+
+1. Open **Settings > Devices & services**.
+2. Select **Temtop**.
+3. Remove the config entry for the device.
+4. If installed manually, delete `custom_components/temtop`.
+5. Restart Home Assistant.
+
+## Development
+
+Install test dependencies:
+
+```powershell
+python -m pip install -e ".[test]"
 ```
 
-### 2. Find your S1+ MAC address
+Run tests:
 
-Make sure the Temtop app is **closed** on your phone, then run:
-
-```bash
-sudo hcitool lescan
+```powershell
+python -m pytest
 ```
 
-Look for a device named `S1+_...` and note the MAC address (e.g. `A4:C1:38:56:89:85`).
-
-### 3. Clone this repository
-
-```bash
-cd /home/pi
-git clone https://github.com/dmosler/temtop-s1plus-homeassistant.git
-cd temtop-s1plus-homeassistant
-```
-
-### 4. Configure
-
-```bash
-cp temtop.conf.example temtop.conf
-nano temtop.conf
-```
-
-Fill in your values:
-
-```
-HA_TOKEN=your_long_lived_access_token_here
-HA_URL=http://your_home_assistant_ip:8123
-```
-
-**How to get a Long-Lived Access Token in Home Assistant:**
-Go to your profile → Security → Long-Lived Access Tokens → Create Token
-
-⚠️ Never share your token publicly!
-
-### 5. Update the MAC address
-
-Edit `temtop.py` and replace the MAC address with yours:
-
-```python
-MAC = "A4:C1:38:56:89:85"  # Replace with your S1+ MAC address
-```
-
-### 6. Test it
-
-```bash
-python3 /home/pi/temtop-s1plus-homeassistant/temtop.py
-```
-
-You should see output like:
-```
-PM2.5: 1.4 µg/m³ | AQI: 8 | Temp: 20.1°C | Humidity: 50.8%
-```
-
-### 7. Run as a service (autostart on boot)
-
-```bash
-sudo cp temtop.service /etc/systemd/system/
-sudo systemctl enable temtop
-sudo systemctl start temtop
-sudo systemctl status temtop
-```
-
-## Home Assistant Dashboard
-
-Add this YAML as a new card in your Lovelace dashboard:
-
-```yaml
-type: entities
-title: Temtop S1+ Air Quality
-entities:
-  - entity: sensor.temtop_pm25
-    name: PM2.5
-    icon: mdi:air-filter
-  - entity: sensor.temtop_aqi
-    name: AQI
-    icon: mdi:leaf
-  - entity: sensor.temtop_temperature
-    name: Temperature
-    icon: mdi:thermometer
-  - entity: sensor.temtop_humidity
-    name: Humidity
-    icon: mdi:water-percent
-```
-
-## How it works
-
-The Temtop S1+ broadcasts data via BLE GATT notifications on characteristic `00010203-0405-0607-0809-0a0b0c0d2b10`.
-
-The data packet is 46 bytes. The relevant byte positions (reverse-engineered):
-
-| Sensor | Bytes | Calculation |
-|--------|-------|-------------|
-| PM2.5 | 22-23 | `int(bytes) / 10` |
-| Temperature | 25 | `byte / 10` |
-| Humidity | 26-27 | `int(bytes) / 10` |
-| AQI | 29 | direct value |
-
-## Important Notes
-
-- **Close the Temtop app** on your phone before running the script — the app holds the BLE connection and blocks other clients.
-- The script connects every 60 seconds, reads data, then disconnects. This is battery-friendly for the S1+.
-- First reading may take up to 20 seconds after the script starts.
-
-## Tested with
-
-- Temtop S1+ firmware as of February 2026
-- Raspberry Pi 1 Model B (2011) with TP-Link UB500 Bluetooth dongle
-- Raspberry Pi OS Bullseye
-- Home Assistant
-
-## Contributing
-
-Found a bug or improvement? Pull requests welcome!
-
-## License
-
-MIT
+The integration includes a `quality_scale.yaml` checklist for the Home Assistant
+Bronze rules. For a Home Assistant Core contribution, branding assets still need
+to be submitted to the upstream
+[home-assistant/brands](https://github.com/home-assistant/brands) repository.

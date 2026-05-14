@@ -1,7 +1,12 @@
-# Config file with secrets - never commit this!
-temtop.conf
-
-# Python
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
+dist/
+build/
+*.egg-info/
+.coverage
+htmlcov/

@@ -1,0 +1,26 @@
+[project]
+name = "temtop-homeassistant"
+version = "0.1.0"
+description = "Home Assistant custom integration for Temtop BLE air quality monitors."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "bleak-retry-connector>=3.10.0",
+]
+
+[project.optional-dependencies]
+test = [
+  "homeassistant>=2024.6.0",
+  "pytest>=8.0",
+  "pytest-asyncio>=0.23",
+  "pytest-homeassistant-custom-component>=0.13.0",
+  "pyserial>=3.5",
+  "pyudev>=0.24.0; sys_platform == 'linux'",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.setuptools]
+packages = []

@@ -1,0 +1,53 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "This Temtop device is already configured.",
+      "no_discovery_info": "Bluetooth discovery information is no longer available."
+    },
+    "error": {
+      "cannot_connect": "Home Assistant cannot currently find a connectable Bluetooth path to this Temtop device."
+    },
+    "step": {
+      "bluetooth_confirm": {
+        "description": "Set up {name} at {address} as {model}?",
+        "title": "Temtop"
+      },
+      "user": {
+        "data": {
+          "address": "Bluetooth address",
+          "model": "Model",
+          "name": "Name"
+        },
+        "data_description": {
+          "address": "The BLE MAC address shown by Home Assistant Bluetooth discovery or a BLE scanner.",
+          "model": "Select the Temtop model when the device name is not available.",
+          "name": "The name used for the device in Home Assistant."
+        },
+        "description": "Enter the Bluetooth address of the Temtop device. The device must be visible through a local Bluetooth adapter or a connectable ESPHome Bluetooth proxy.",
+        "title": "Temtop"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "aqi": {
+        "name": "AQI"
+      },
+      "co2": {
+        "name": "CO2"
+      },
+      "connection_status": {
+        "name": "Connection status"
+      },
+      "humidity": {
+        "name": "Humidity"
+      },
+      "pm25": {
+        "name": "PM2.5"
+      },
+      "temperature": {
+        "name": "Temperature"
+      }
+    }
+  }
+}

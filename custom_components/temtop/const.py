@@ -1,0 +1,24 @@
+"""Constants for the Temtop integration."""
+
+DOMAIN = "temtop"
+
+CONF_ADDRESS = "address"
+CONF_MODEL = "model"
+CONF_NAME = "name"
+
+MODEL_AUTO = "auto"
+MODEL_C1PLUS = "c1plus"
+MODEL_S1PLUS = "s1plus"
+MODELS = [MODEL_AUTO, MODEL_C1PLUS, MODEL_S1PLUS]
+
+MODEL_NAMES = {
+    MODEL_AUTO: "Auto",
+    MODEL_C1PLUS: "C1+",
+    MODEL_S1PLUS: "S1+",
+}
+
+DEFAULT_NAME = "Temtop"
+NOTIFY_UUID = "00010203-0405-0607-0809-0a0b0c0d2b10"
+
+NOTIFICATION_IDLE_TIMEOUT = 60
+RECONNECT_DELAY_SECONDS = 5

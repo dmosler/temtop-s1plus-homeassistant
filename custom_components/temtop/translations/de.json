@@ -1,0 +1,53 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Dieses Temtop-Geraet ist bereits eingerichtet.",
+      "no_discovery_info": "Die Bluetooth-Discovery-Informationen sind nicht mehr verfuegbar."
+    },
+    "error": {
+      "cannot_connect": "Home Assistant findet aktuell keinen verbindbaren Bluetooth-Pfad zu diesem Temtop-Geraet."
+    },
+    "step": {
+      "bluetooth_confirm": {
+        "description": "{name} unter {address} als {model} einrichten?",
+        "title": "Temtop"
+      },
+      "user": {
+        "data": {
+          "address": "Bluetooth-Adresse",
+          "model": "Modell",
+          "name": "Name"
+        },
+        "data_description": {
+          "address": "Die BLE-MAC-Adresse aus der Home-Assistant-Bluetooth-Erkennung oder einem BLE-Scanner.",
+          "model": "Waehle das Temtop-Modell, wenn der Geraetename nicht verfuegbar ist.",
+          "name": "Der Geraetename in Home Assistant."
+        },
+        "description": "Gib die Bluetooth-Adresse des Temtop-Geraets ein. Das Geraet muss ueber einen lokalen Bluetooth-Adapter oder einen verbindbaren ESPHome-Bluetooth-Proxy sichtbar sein.",
+        "title": "Temtop"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "aqi": {
+        "name": "AQI"
+      },
+      "co2": {
+        "name": "CO2"
+      },
+      "connection_status": {
+        "name": "Verbindungsstatus"
+      },
+      "humidity": {
+        "name": "Luftfeuchtigkeit"
+      },
+      "pm25": {
+        "name": "PM2.5"
+      },
+      "temperature": {
+        "name": "Temperatur"
+      }
+    }
+  }
+}

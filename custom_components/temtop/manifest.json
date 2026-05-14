@@ -1,0 +1,21 @@
+{
+  "domain": "temtop",
+  "name": "Temtop",
+  "bluetooth": [
+    {
+      "local_name": "C1+_*",
+      "connectable": true
+    },
+    {
+      "local_name": "S1+_*",
+      "connectable": true
+    }
+  ],
+  "codeowners": ["@dmosler", "@ReiNa1956"],
+  "config_flow": true,
+  "dependencies": ["bluetooth"],
+  "documentation": "https://github.com/dmosler/temtop-s1plus-homeassistant",
+  "iot_class": "local_push",
+  "requirements": ["bleak-retry-connector>=3.10.0"],
+  "version": "0.1.0"
+}
