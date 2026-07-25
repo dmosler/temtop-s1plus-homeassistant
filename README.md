@@ -10,6 +10,8 @@ Connects to the Temtop S1+ air quality monitor via Bluetooth Low Energy (BLE), r
 
 Between midnight and 6 a.m. the script switches to night mode and only checks once per hour, which saves the S1+ battery. The intervals and the night window are constants at the top of `temtop.py`.
 
+If a reading fails, the retry interval backs off from 30 s up to 5 minutes. After 3 consecutive failures the Home Assistant entities are set to `unavailable`, so a dead sensor is visible as such instead of the dashboard showing a stale value forever.
+
 **Sensors available:**
 - PM2.5 (µg/m³)
 - AQI
