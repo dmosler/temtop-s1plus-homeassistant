@@ -3,6 +3,8 @@ Description=Temtop S1+ BLE Monitor
 After=network.target bluetooth.target
 
 [Service]
+# Without this, Python block-buffers stdout and journal timestamps are useless
+Environment=PYTHONUNBUFFERED=1
 ExecStart=/usr/bin/python3 /home/pi/temtop.py
 Restart=always
 RestartSec=30

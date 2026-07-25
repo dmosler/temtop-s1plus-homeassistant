@@ -5,3 +5,6 @@ temtop.conf
 __pycache__/
 *.pyc
 *.pyo
+
+# Local snapshot pulled from the Pi, not part of the project
+pi-snapshot/

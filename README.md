@@ -6,7 +6,9 @@ This is believed to be the **first open-source integration** for the Temtop S1+ 
 
 ## What it does
 
-Connects to the Temtop S1+ air quality monitor via Bluetooth Low Energy (BLE), reads the sensor data every 60 seconds, and sends it directly to Home Assistant via the REST API.
+Connects to the Temtop S1+ air quality monitor via Bluetooth Low Energy (BLE), reads the sensor data every 2 minutes, and sends it directly to Home Assistant via the REST API.
+
+Between midnight and 6 a.m. the script switches to night mode and only checks once per hour, which saves the S1+ battery. The intervals and the night window are constants at the top of `temtop.py`.
 
 **Sensors available:**
 - PM2.5 (µg/m³)
@@ -135,15 +137,18 @@ The data packet is 46 bytes. The relevant byte positions (reverse-engineered):
 | Sensor | Bytes | Calculation |
 |--------|-------|-------------|
 | PM2.5 | 22-23 | `int(bytes) / 10` |
-| Temperature | 25 | `byte / 10` |
+| Temperature | 24-25 | `int(bytes) / 10` |
 | Humidity | 26-27 | `int(bytes) / 10` |
 | AQI | 29 | direct value |
+
+Temperature must be read as **two** bytes. Earlier versions read only byte 25, which silently wraps above 25.5 °C (e.g. 30.3 °C was reported as 4.7 °C).
 
 ## Important Notes
 
 - **Close the Temtop app** on your phone before running the script — the app holds the BLE connection and blocks other clients.
-- The script connects every 60 seconds, reads data, then disconnects. This is battery-friendly for the S1+.
+- The script connects every 2 minutes, reads data, then disconnects. This is battery-friendly for the S1+.
 - First reading may take up to 20 seconds after the script starts.
+- Repeated `BleakDeviceNotFoundError` usually means the S1+ battery is low — it stops advertising before it stops showing a reading on its display. Verify with `sudo timeout 15 hcitool lescan | grep A4:C1:38` and charge it via USB.
 
 ## Tested with
 

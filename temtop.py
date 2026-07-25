@@ -1,9 +1,16 @@
 import asyncio
 import requests
 from bleak import BleakClient
+from datetime import datetime
 
 MAC = "A4:C1:38:56:89:85"  # Replace with your S1+ MAC address
 CHAR_UUID = "00010203-0405-0607-0809-0a0b0c0d2b10"
+
+READ_INTERVAL = 120   # seconds between successful readings
+RETRY_INTERVAL = 30   # seconds before retrying after a failed reading
+NIGHT_INTERVAL = 3600  # seconds between checks during night mode
+ACTIVE_FROM = 6       # night mode ends at this hour
+ACTIVE_UNTIL = 24     # night mode starts at this hour
 
 # Load config
 config = {}
@@ -14,6 +21,10 @@ with open('/home/pi/temtop.conf') as f:
 
 HA_URL = config['HA_URL']
 HA_TOKEN = config['HA_TOKEN']
+
+
+def is_active_time():
+    return ACTIVE_FROM <= datetime.now().hour < ACTIVE_UNTIL
 
 
 def send_to_ha(sensor, value, unit):
@@ -35,7 +46,8 @@ def send_to_ha(sensor, value, unit):
 def parse_data(data):
     pm25 = int.from_bytes(data[22:24], 'big') / 10
     aqi = data[29]
-    temp = data[25] / 10
+    # Two bytes: a single byte wraps above 25.5 °C
+    temp = int.from_bytes(data[24:26], 'big') / 10
     humidity = int.from_bytes(data[26:28], 'big') / 10
     return pm25, aqi, temp, humidity
 
@@ -62,6 +74,11 @@ async def read_once():
 async def main():
     print("Temtop S1+ monitor started")
     while True:
+        if not is_active_time():
+            print("Night mode - next reading in 1 hour")
+            await asyncio.sleep(NIGHT_INTERVAL)
+            continue
+
         try:
             values = await read_once()
             if values:
@@ -73,10 +90,14 @@ async def main():
                 send_to_ha("humidity", humidity, "%")
             else:
                 print("No data received, retrying...")
+                await asyncio.sleep(RETRY_INTERVAL)
+                continue
         except Exception as e:
             print(f"Error: {type(e).__name__}: {e}")
+            await asyncio.sleep(RETRY_INTERVAL)
+            continue
 
-        await asyncio.sleep(60)
+        await asyncio.sleep(READ_INTERVAL)
 
 
 asyncio.run(main())
