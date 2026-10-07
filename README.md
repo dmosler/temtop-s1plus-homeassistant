@@ -142,12 +142,12 @@ The data packet is 47 bytes. Multi-byte values are big-endian. The relevant byte
 | PM2.5 | 22-23 | `int(bytes) / 10` |
 | Temperature | 24-25 | `int(bytes) / 10` |
 | Humidity | 26-27 | `int(bytes) / 10` |
-| AQI | 29 | direct value |
+| AQI (US) | 28-29 | `int(bytes)` |
 | Checksum | 46 | sum of bytes 2-45, modulo 256 |
 
 Packets with the wrong length or checksum are ignored.
 
-Temperature must be read as **two** bytes. Earlier versions read only byte 25, which silently wraps above 25.5 °C (e.g. 30.3 °C was reported as 4.7 °C).
+Temperature must be read as **two** bytes. Earlier versions read only byte 25, which silently wraps above 25.5 °C (e.g. 30.3 °C was reported as 4.7 °C). AQI is read from two bytes for the same reason: byte 28 has always been `00` so far, but US AQI goes up to 500.
 
 ### Write order matters
 

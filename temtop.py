@@ -77,7 +77,8 @@ def is_valid_packet(data):
 
 def parse_data(data):
     pm25 = int.from_bytes(data[22:24], 'big') / 10
-    aqi = data[29]
+    # Two bytes like the neighbouring fields: US AQI goes up to 500
+    aqi = int.from_bytes(data[28:30], 'big')
     # Two bytes: a single byte wraps above 25.5 °C
     temp = int.from_bytes(data[24:26], 'big') / 10
     humidity = int.from_bytes(data[26:28], 'big') / 10
