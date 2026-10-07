@@ -5,6 +5,7 @@ from datetime import datetime
 
 MAC = "A4:C1:38:56:89:85"  # Replace with your S1+ MAC address
 CHAR_UUID = "00010203-0405-0607-0809-0a0b0c0d2b10"
+PACKET_LENGTH = 47
 
 READ_INTERVAL = 120    # seconds between successful readings
 RETRY_INTERVAL = 30    # seconds before the first retry after a failed reading
@@ -47,6 +48,7 @@ def is_active_time():
 
 
 def send_to_ha(sensor, value, unit):
+    """Returns True if Home Assistant accepted the state."""
     url = f"{HA_URL}/api/states/sensor.temtop_{sensor}"
     headers = {
         "Authorization": f"Bearer {HA_TOKEN}",
@@ -61,8 +63,16 @@ def send_to_ha(sensor, value, unit):
         response = requests.post(url, json=data, headers=headers, timeout=10)
         if response.status_code >= 400:
             print(f"HA rejected {sensor}: {response.status_code} {response.text}")
+            return False
+        return True
     except Exception as e:
         print(f"HA error: {e}")
+        return False
+
+
+def is_valid_packet(data):
+    # The last byte is the sum of bytes 2-45, checked against captured packets
+    return len(data) == PACKET_LENGTH and sum(data[2:-1]) & 0xFF == data[-1]
 
 
 def parse_data(data):
@@ -76,8 +86,14 @@ def parse_data(data):
 
 async def read_once():
     result = {}
+    ignored = []
 
     def handler(sender, data):
+        # A shorter packet raises IndexError in parse_data(), a corrupted or
+        # differently structured one would decode to plausible-looking garbage
+        if not is_valid_packet(data):
+            ignored.append(data.hex())
+            return
         result['values'] = parse_data(data)
 
     try:
@@ -89,6 +105,8 @@ async def read_once():
         if not isinstance(e, EOFError):
             print(f"Connection error: {type(e).__name__}: {e}")
 
+    if ignored:
+        print(f"Ignored {len(ignored)} invalid packet(s), last: {ignored[-1]}")
     return result.get('values')
 
 
@@ -125,9 +143,11 @@ async def main():
         # failures usually means an empty battery rather than a script problem.
         if failures >= FAILURES_UNTIL_UNAVAILABLE and not marked_unavailable:
             print(f"No data after {failures} attempts - marking sensors unavailable")
-            for sensor, unit in SENSORS:
-                send_to_ha(sensor, "unavailable", unit)
-            marked_unavailable = True
+            # A list, not a generator: all() would stop sending at the first
+            # failure. If HA did not take every state, try again next round
+            # instead of leaving the stale values in place for the whole outage.
+            marked_unavailable = all([send_to_ha(sensor, "unavailable", unit)
+                                      for sensor, unit in SENSORS])
 
         delay = min(RETRY_INTERVAL * 2 ** (failures - 1), MAX_RETRY_INTERVAL)
         print(f"No data received (attempt {failures}), retrying in {delay}s")

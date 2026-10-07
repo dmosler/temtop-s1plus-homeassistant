@@ -134,14 +134,18 @@ entities:
 
 The Temtop S1+ broadcasts data via BLE GATT notifications on characteristic `00010203-0405-0607-0809-0a0b0c0d2b10`.
 
-The data packet is 46 bytes. The relevant byte positions (reverse-engineered):
+The data packet is 47 bytes. Multi-byte values are big-endian. The relevant byte positions (reverse-engineered):
 
-| Sensor | Bytes | Calculation |
+| Field | Bytes | Calculation |
 |--------|-------|-------------|
+| Device clock | 15-20 | year (2 bytes), month, day, hour, minute |
 | PM2.5 | 22-23 | `int(bytes) / 10` |
 | Temperature | 24-25 | `int(bytes) / 10` |
 | Humidity | 26-27 | `int(bytes) / 10` |
 | AQI | 29 | direct value |
+| Checksum | 46 | sum of bytes 2-45, modulo 256 |
+
+Packets with the wrong length or checksum are ignored.
 
 Temperature must be read as **two** bytes. Earlier versions read only byte 25, which silently wraps above 25.5 °C (e.g. 30.3 °C was reported as 4.7 °C).
 
