@@ -134,16 +134,26 @@ entities:
 
 The Temtop S1+ broadcasts data via BLE GATT notifications on characteristic `00010203-0405-0607-0809-0a0b0c0d2b10`.
 
-The data packet is 46 bytes. The relevant byte positions (reverse-engineered):
+The data packet is 47 bytes. Multi-byte values are big-endian. The relevant byte positions (reverse-engineered):
 
-| Sensor | Bytes | Calculation |
+| Field | Bytes | Calculation |
 |--------|-------|-------------|
+| Device clock | 15-20 | year (2 bytes), month, day, hour, minute |
 | PM2.5 | 22-23 | `int(bytes) / 10` |
 | Temperature | 24-25 | `int(bytes) / 10` |
 | Humidity | 26-27 | `int(bytes) / 10` |
-| AQI | 29 | direct value |
+| AQI (US) | 28-29 | `int(bytes)` |
+| Checksum | 46 | sum of bytes 2-45, modulo 256 |
 
-Temperature must be read as **two** bytes. Earlier versions read only byte 25, which silently wraps above 25.5 °C (e.g. 30.3 °C was reported as 4.7 °C).
+Packets with the wrong length or checksum are ignored.
+
+Temperature must be read as **two** bytes. Earlier versions read only byte 25, which silently wraps above 25.5 °C (e.g. 30.3 °C was reported as 4.7 °C). AQI is read from two bytes for the same reason: byte 28 has always been `00` so far, but US AQI goes up to 500.
+
+### Write order matters
+
+Each sensor is pushed to Home Assistant as a separate REST call, so the four entities do not update at the same instant. If an automation triggers on one entity and reads the others in its message template, it renders before the later calls arrive and reports stale values.
+
+`SENSORS` therefore sends `pm25` **last**, because that is the entity automations usually trigger on. Keep it there when adding sensors, or the message template will report the previous reading — or `unavailable`, if the entities were marked unavailable in the meantime.
 
 ## Important Notes
 
