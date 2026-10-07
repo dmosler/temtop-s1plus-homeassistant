@@ -17,12 +17,18 @@ ACTIVE_UNTIL = 24      # night mode starts at this hour
 # Without this they would keep showing the last value indefinitely.
 FAILURES_UNTIL_UNAVAILABLE = 3
 
-# Order matches the tuple returned by parse_data()
+# Order matches the tuple returned by parse_data(), and is also the order the
+# values are pushed to Home Assistant. pm25 has to stay last: the HA automations
+# trigger on sensor.temtop_pm25 and read the other three entities in their
+# message template. Each send_to_ha() is its own HTTP request, so anything sent
+# after pm25 is not in HA yet when the automation renders - it used to report
+# the previous reading's AQI, and "unavailable" once the failure handling below
+# started writing that state.
 SENSORS = [
-    ("pm25", "µg/m³"),
     ("aqi", "AQI"),
     ("temperature", "°C"),
     ("humidity", "%"),
+    ("pm25", "µg/m³"),
 ]
 
 # Load config
@@ -51,7 +57,10 @@ def send_to_ha(sensor, value, unit):
         "attributes": {"unit_of_measurement": unit}
     }
     try:
-        requests.post(url, json=data, headers=headers)
+        # Without a timeout a stalled connection blocks the whole read loop
+        response = requests.post(url, json=data, headers=headers, timeout=10)
+        if response.status_code >= 400:
+            print(f"HA rejected {sensor}: {response.status_code} {response.text}")
     except Exception as e:
         print(f"HA error: {e}")
 
@@ -62,15 +71,14 @@ def parse_data(data):
     # Two bytes: a single byte wraps above 25.5 °C
     temp = int.from_bytes(data[24:26], 'big') / 10
     humidity = int.from_bytes(data[26:28], 'big') / 10
-    return pm25, aqi, temp, humidity
+    return aqi, temp, humidity, pm25
 
 
 async def read_once():
     result = {}
 
     def handler(sender, data):
-        pm25, aqi, temp, humidity = parse_data(data)
-        result['values'] = (pm25, aqi, temp, humidity)
+        result['values'] = parse_data(data)
 
     try:
         async with BleakClient(MAC) as client:
@@ -102,7 +110,7 @@ async def main():
             print(f"Error: {type(e).__name__}: {e}")
 
         if values:
-            pm25, aqi, temp, humidity = values
+            aqi, temp, humidity, pm25 = values
             print(f"PM2.5: {pm25} µg/m³ | AQI: {aqi} | Temp: {temp}°C | Humidity: {humidity}%")
             for (sensor, unit), value in zip(SENSORS, values):
                 send_to_ha(sensor, value, unit)

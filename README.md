@@ -145,6 +145,12 @@ The data packet is 46 bytes. The relevant byte positions (reverse-engineered):
 
 Temperature must be read as **two** bytes. Earlier versions read only byte 25, which silently wraps above 25.5 °C (e.g. 30.3 °C was reported as 4.7 °C).
 
+### Write order matters
+
+Each sensor is pushed to Home Assistant as a separate REST call, so the four entities do not update at the same instant. If an automation triggers on one entity and reads the others in its message template, it renders before the later calls arrive and reports stale values.
+
+`SENSORS` therefore sends `pm25` **last**, because that is the entity automations usually trigger on. Keep it there when adding sensors, or the message template will report the previous reading — or `unavailable`, if the entities were marked unavailable in the meantime.
+
 ## Important Notes
 
 - **Close the Temtop app** on your phone before running the script — the app holds the BLE connection and blocks other clients.
